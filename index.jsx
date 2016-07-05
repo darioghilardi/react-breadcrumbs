@@ -37,6 +37,11 @@ class Breadcrumbs extends React.Component {
       name = route.name;
     }
 
+    //check to see if a custom name has been passed to the component
+    if (!name && this.props.displayName) {
+      name = this.props.displayName;
+    }
+
     //if the name exists and it's in the excludes list exclude this route
     //if (name && this.props.excludes.some(item => item === name)) return null;
 
@@ -83,42 +88,44 @@ class Breadcrumbs extends React.Component {
       makeLink = route.breadcrumblink;
     }
 
-    // find param name (if provided)
-    if(this.props.params){
-      paramName = Object.keys(this.props.params).map((param) => {
-        pathValue=param;
-        return this.props.params[param];
+    if(!this.props.displayName) {
+      // find param name (if provided)
+      if(this.props.params){
+        paramName = Object.keys(this.props.params).map((param) => {
+          pathValue=param;
+          return this.props.params[param];
+        })
+      }
+
+      // Replace route param with real param (if provided)
+      let currentKey = route.path.split("/")[route.path.split("/").length-1];
+      let keyValue;
+      route.path.split("/").map((link)=>{
+        if(link.substring(0,1)==":"){
+          if(this.props.params){
+            keyValue = Object.keys(this.props.params).map((param) => {
+              return this.props.params[param];
+            });
+            let pathWithParam = route.path.split("/").map((link)=>{
+              if(link.substring(0,1)==":"){
+                return keyValue.shift();
+              } else {
+                return link;
+              }
+            })
+            route.path=pathWithParam.reduce((start,link)=>{return start+"/"+link;})
+            if(!route.staticName && currentKey.substring(0,1)==":")
+              name=pathWithParam.reduce((start,link)=>{return link;});
+
+            if (typeof route.prettifyParam === 'function'){
+              name = route.prettifyParam(name);
+            }
+          }
+        }
       })
     }
 
-    // Replace route param with real param (if provided)
-    let currentKey = route.path.split("/")[route.path.split("/").length-1];
-    let keyValue;
-    route.path.split("/").map((link)=>{
-      if(link.substring(0,1)==":"){
-        if(this.props.params){
-          keyValue = Object.keys(this.props.params).map((param) => {
-            return this.props.params[param];
-          });
-          let pathWithParam = route.path.split("/").map((link)=>{
-            if(link.substring(0,1)==":"){
-              return keyValue.shift();
-            } else {
-              return link;
-            }
-          })
-          route.path=pathWithParam.reduce((start,link)=>{return start+"/"+link;})
-          if(!route.staticName && currentKey.substring(0,1)==":")
-            name=pathWithParam.reduce((start,link)=>{return link;});
-
-          if (typeof route.prettifyParam === 'function'){
-            name = route.prettifyParam(name);
-          }
-        }
-      }
-    })
     if (name) {
-
       if(this.props.prettify){
         // Note: this could be replaced with a more complex prettifier
         console.log('prettifying')
